@@ -18,9 +18,9 @@ jobs:
           node-version: 18.18.2
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          run_install: false
+          run_install: true
 
       - name: Get pnpm store directory
         shell: bash
