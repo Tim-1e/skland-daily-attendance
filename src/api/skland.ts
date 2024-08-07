@@ -30,18 +30,47 @@ export async function signIn(grant_code: string) {
  * @param token 森空岛用户的 token
  */
 export async function getBinding(cred: string, token: string) {
-  const url = new URL(BINDING_URL)
-  const [sign, headers] = generateSignature(token, url)
-  const response = await fetch(BINDING_URL, {
-    headers: Object.assign(headers, { sign, cred }),
-  })
-  const data = await response.json() as BindingResponse
-  if (data.code !== 0)
-    throw new Error(`获取绑定角色错误:${data.message}`)
+  const url = new URL(BINDING_URL);
+  const [sign, headers] = generateSignature(token, url);
+  let attempts = 0;
+  const maxAttempts = 10;
 
-  return data.data
+  while (attempts < maxAttempts) {
+    try {
+      const response = await fetch(BINDING_URL, {
+        headers: Object.assign(headers, { sign, cred }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`请求失败，状态码: ${response.status}, 返回内容: ${text}`);
+        attempts++;
+        continue;
+      }
+
+      try {
+        const data = await response.json() as BindingResponse;
+        if (data.code !== 0) {
+          throw new Error(`获取绑定角色错误:${data.message}`);
+        }
+        return data.data;
+      } catch (error) {
+        const text = await response.text();
+        console.error(`解析响应数据错误: ${error.message}, 返回内容: ${text}`);
+        attempts++;
+      }
+    } catch (error) {
+      console.error(`请求出错: ${error.message}`);
+      attempts++;
+    }
+
+    if (attempts < maxAttempts) {
+      console.log(`重试第 ${attempts} 次...`);
+    }
+  }
+
+  throw new Error(`请求失败超过 ${maxAttempts} 次，无法获取绑定角色`);
 }
-
 /**
  * 登岛检票
  * @param cred 鹰角网络通行证账号的登录凭证
