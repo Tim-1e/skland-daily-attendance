@@ -24,6 +24,11 @@ export async function signIn(grant_code: string) {
 
   return data.data
 }
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
  * 通过登录凭证和森空岛用户的 token 获取角色绑定列表
  * @param cred 鹰角网络通行证账号的登录凭证
@@ -34,6 +39,7 @@ export async function getBinding(cred: string, token: string) {
   const [sign, headers] = generateSignature(token, url);
   let attempts = 0;
   const maxAttempts = 10;
+  const delay = 10000; // 每次重试之间的延迟时间（毫秒）
 
   while (attempts < maxAttempts) {
     try {
@@ -45,6 +51,10 @@ export async function getBinding(cred: string, token: string) {
         const text = await response.text();
         console.error(`请求失败，状态码: ${response.status}, 返回内容: ${text}`);
         attempts++;
+        if (attempts < maxAttempts) {
+          console.log(`重试第 ${attempts} 次...`);
+          await sleep(delay); // 延迟再重试
+        }
         continue;
       }
 
@@ -58,19 +68,24 @@ export async function getBinding(cred: string, token: string) {
         const text = await response.text();
         console.error(`解析响应数据错误: ${error.message}, 返回内容: ${text}`);
         attempts++;
+        if (attempts < maxAttempts) {
+          console.log(`重试第 ${attempts} 次...`);
+          await sleep(delay); // 延迟再重试
+        }
       }
     } catch (error) {
       console.error(`请求出错: ${error.message}`);
       attempts++;
-    }
-
-    if (attempts < maxAttempts) {
-      console.log(`重试第 ${attempts} 次...`);
+      if (attempts < maxAttempts) {
+        console.log(`重试第 ${attempts} 次...`);
+        await sleep(delay); // 延迟再重试
+      }
     }
   }
 
   throw new Error(`请求失败超过 ${maxAttempts} 次，无法获取绑定角色`);
 }
+
 /**
  * 登岛检票
  * @param cred 鹰角网络通行证账号的登录凭证
