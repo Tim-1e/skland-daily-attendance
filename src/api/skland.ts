@@ -38,11 +38,12 @@ export async function getBinding(cred: string, token: string) {
   const url = new URL(BINDING_URL);
   const [sign, headers] = generateSignature(token, url);
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = 5;
   const delay = 10000; // 每次重试之间的延迟时间（毫秒）
 
   while (attempts < maxAttempts) {
     try {
+      console.log(`尝试获取URL: ${url.toString()}`);
       const response = await fetch(BINDING_URL, {
         headers: Object.assign(headers, { sign, cred }),
       });
