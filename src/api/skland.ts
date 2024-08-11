@@ -114,6 +114,7 @@ export async function attendance(cred: string, token: string, body: { uid: strin
     SKLAND_ATTENDANCE_URL,
     { method: 'POST', headers, body: JSON.stringify(body) },
   )
+  console.log(response);
   const data = await response.json() as AttendanceResponse
 
   return data
